@@ -38,29 +38,29 @@ func main() {
 	var w *astilectron.Window
 	if w, err = a.NewWindow("resources/index.html", &astilectron.WindowOptions{
 		Center: astikit.BoolPtr(true),
-		Height: astikit.IntPtr(700),
-		Width:  astikit.IntPtr(700),
+		Height: astikit.IntPtr(900),
+		Width:  astikit.IntPtr(900),
 	}); err != nil {
 		l.Fatal(fmt.Errorf("main: new window failed: %w", err))
 	}
 
 	initDict()
-	var move = "uf+3,4"
-	translate(move)
 
 	// Create windows
 	if err = w.Create(); err != nil {
 		l.Fatal(fmt.Errorf("main: creating window failed: %w", err))
 	}
-	w.OpenDevTools()
-	w.SendMessage("hello", func(m *astilectron.EventMessage) {
-		// Unmarshal
-		var s string
-		m.Unmarshal(&s)
+	//w.OpenDevTools()
 
+	//Receive string to translate
+	w.OnMessage(func(m *astilectron.EventMessage) interface{} {
+		// Unmarshal
+		var move string
+		m.Unmarshal(&move)
 		// Process message
-		log.Printf("received %s\n", s)
+		return translate(move)
 	})
+
 	// Blocking pattern
 	a.Wait()
 
@@ -89,17 +89,19 @@ func initDict() {
 	stringToImageDict["ub"] = "ub.svg"
 }
 
-func translate(moveString string) {
+func translate(moveString string) []string {
 
 	imageMoveString := []string{}
 	var backPointer = 0
 
 	for i := 0; i < len(moveString); i++ {
+		//If we find a '+', and we are not at the first or last character
 		if string(moveString[i]) == "+" {
 			if _, err := strconv.Atoi(string(moveString[i-1])); err == nil {
 				if _, err2 := strconv.Atoi(string(moveString[i+1])); err2 == nil {
 					imageMoveString = append(imageMoveString, stringToImageDict[moveString[i-1:i+2]])
 					backPointer = i + 2
+
 				}
 			} else {
 				imageMoveString = append(imageMoveString, stringToImageDict[moveString[backPointer:i]])
@@ -108,7 +110,7 @@ func translate(moveString string) {
 		}
 
 		if string(moveString[i]) == "," {
-			imageMoveString = append(imageMoveString, stringToImageDict[moveString[backPointer:i]])
+			//imageMoveString = append(imageMoveString, stringToImageDict[moveString[backPointer:i]])
 			backPointer = i + 1
 		}
 
@@ -118,5 +120,5 @@ func translate(moveString string) {
 			}
 		}
 	}
-	fmt.Println(imageMoveString)
+	return imageMoveString
 }
